@@ -71,6 +71,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--offwhite);color:var(--tex
 .bc-input-wrap span{font-size:12px;color:var(--muted);}
 .bc-input{border:1.5px solid var(--border);border-radius:6px;padding:4px 9px;font-family:'DM Serif Display',serif;font-size:16px;color:var(--dark);width:100px;}
 .bc-input:focus{outline:none;border-color:var(--lime);}
+.wt-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.wt-item{display:flex;align-items:center;gap:4px;}
+.wt-label{font-size:11px;color:var(--muted);}
+.wt-input{border:1.5px solid var(--border);border-radius:5px;padding:3px 6px;font-family:'DM Serif Display',serif;font-size:14px;color:var(--dark);width:46px;text-align:center;background:#fff;}
+.wt-input:focus{outline:none;border-color:var(--lime);}
+.wt-pct{font-size:11px;color:var(--muted);}
+.wt-sep{color:var(--border);font-size:12px;}
+.wt-total{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;transition:all .2s;white-space:nowrap;}
+.wt-total.ok{background:rgba(132,189,0,.15);color:var(--midgreen);}
+.wt-total.bad{background:rgba(232,59,59,.12);color:var(--red);}
 
 /* SUMMARY */
 .summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
@@ -426,6 +436,18 @@ function updateDisplay(pid){
   const totalW=p.metrics.reduce((a,m)=>a+m.weight,0);
   const warn=document.getElementById(pid+'-warn');
   if(warn){warn.textContent='⚠ Weights total '+totalW+'% — must equal 100%';warn.classList.toggle('show',totalW!==100);}
+  // Config bar total badge
+  const wtTotal=document.getElementById(pid+'-wt-total');
+  if(wtTotal){
+    wtTotal.textContent='= '+totalW+'%';
+    wtTotal.className='wt-total '+(totalW===100?'ok':'bad');
+  }
+  // Sync metric card weight badges from config bar inputs (in case changed via edit-metrics mode)
+  p.metrics.forEach((m,mi)=>{
+    const wtIn=document.getElementById(pid+'-wt-'+mi);
+    if(wtIn && wtIn!==document.activeElement) wtIn.value=m.weight;
+    el(pid+'-mweight-'+mi,m.weight+'%');
+  });
 }
 
 function updateSliderUI(pid,mi,v){
@@ -458,7 +480,14 @@ function onTarget(pid,mi,q,v){PEOPLE.find(x=>x.id===pid).metrics[mi].targets[q]=
 function onActual(pid,mi,q,v){PEOPLE.find(x=>x.id===pid).metrics[mi].actuals[q]=v;updateDisplay(pid);}
 function onAnnualBonus(pid,v){PEOPLE.find(x=>x.id===pid).annualBonus=parseFloat(v)||6000;updateDisplay(pid);}
 function onEditTitle(pid,mi,v){PEOPLE.find(x=>x.id===pid).metrics[mi].title=v;el(pid+'-mtitle-'+mi,v);}
-function onEditWeight(pid,mi,v){PEOPLE.find(x=>x.id===pid).metrics[mi].weight=parseInt(v)||0;el(pid+'-mweight-'+mi,(parseInt(v)||0)+'%');updateDisplay(pid);}
+function onEditWeight(pid,mi,v){
+  PEOPLE.find(x=>x.id===pid).metrics[mi].weight=parseInt(v)||0;
+  el(pid+'-mweight-'+mi,(parseInt(v)||0)+'%');
+  // Sync the config bar input for this metric
+  const wtInput=document.getElementById(pid+'-wt-'+mi);
+  if(wtInput && wtInput!==document.activeElement) wtInput.value=parseInt(v)||0;
+  updateDisplay(pid);
+}
 function onEditBktR(pid,mi,bi,v){PEOPLE.find(x=>x.id===pid).metrics[mi].brackets[bi].r=v;updateDisplay(pid);}
 function onEditBktP(pid,mi,bi,v){PEOPLE.find(x=>x.id===pid).metrics[mi].brackets[bi].p=parseInt(v)||0;updateDisplay(pid);}
 function toggleEdit(pid){
@@ -603,7 +632,38 @@ function renderPanels(){
       <div class="bc-divider"></div>
       <div class="bc-item"><div class="bc-label">QUARTERLY TARGET</div><div class="bc-val g" id="${p.id}-q-bonus-cfg">${fmt(p.annualBonus/4)}</div></div>
       <div class="bc-divider"></div>
-      <div class="bc-item"><div class="bc-label">WEIGHTING</div><div style="font-size:11px;color:var(--muted)">Churn 40% · Margin 30% · Upsell GP 30%</div></div>
+      <div class="bc-item">
+        <div class="bc-label">WEIGHTING</div>
+        <div class="wt-row">
+          <div class="wt-item">
+            <span class="wt-label">Churn</span>
+            <input class="wt-input" type="number" min="0" max="100"
+              value="${p.metrics[0].weight}"
+              oninput="onEditWeight('${p.id}',0,this.value)"
+              id="${p.id}-wt-0"/>
+            <span class="wt-pct">%</span>
+          </div>
+          <span class="wt-sep">·</span>
+          <div class="wt-item">
+            <span class="wt-label">Margin</span>
+            <input class="wt-input" type="number" min="0" max="100"
+              value="${p.metrics[1].weight}"
+              oninput="onEditWeight('${p.id}',1,this.value)"
+              id="${p.id}-wt-1"/>
+            <span class="wt-pct">%</span>
+          </div>
+          <span class="wt-sep">·</span>
+          <div class="wt-item">
+            <span class="wt-label">Upsell GP</span>
+            <input class="wt-input" type="number" min="0" max="100"
+              value="${p.metrics[2].weight}"
+              oninput="onEditWeight('${p.id}',2,this.value)"
+              id="${p.id}-wt-2"/>
+            <span class="wt-pct">%</span>
+          </div>
+          <span class="wt-total ok" id="${p.id}-wt-total">= 100%</span>
+        </div>
+      </div>
     </div>
     <div class="summary-row">
       <div class="sum-card"><div class="sum-label">Q TARGET</div><div class="sum-val" id="${p.id}-sum-qtarget">${fmt(p.annualBonus/4)}</div><div class="sum-sub">this quarter</div></div>
