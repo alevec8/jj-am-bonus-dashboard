@@ -126,12 +126,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--offwhite);color:var(--tex
 .zlabel::before{content:'';display:block;width:1px;height:4px;background:var(--border);margin:0 auto 1px;}
 
 /* PAYOUT BADGE */
-.pbadge{display:flex;align-items:center;justify-content:space-between;border-radius:7px;padding:9px 12px;transition:background .3s;}
+.pbadge{display:flex;align-items:center;justify-content:space-between;border-radius:8px;padding:10px 13px;transition:background .3s,border-color .3s;min-height:48px;}
+.pbadge.empty{background:transparent !important;border:1.5px dashed var(--border);display:flex;align-items:center;gap:10px;}
+.pbadge.empty .pb-empty-icon{width:28px;height:28px;border-radius:50%;background:var(--offwhite);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.pbadge.empty .pb-empty-text{font-size:11px;color:var(--muted);}
 .pb-left .pb-label{font-size:9px;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.5px;}
-.pb-left .pb-desc{font-size:10px;color:rgba(255,255,255,.5);margin-top:1px;}
+.pb-left .pb-desc{font-size:10.5px;color:rgba(255,255,255,.6);margin-top:2px;}
 .pb-right{text-align:right;}
-.pb-pct{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;line-height:1;}
-.pb-earn{font-size:9px;color:rgba(255,255,255,.5);margin-top:1px;}
+.pb-pct{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;line-height:1;}
+.pb-earn{font-size:9px;color:rgba(255,255,255,.55);margin-top:2px;}
 
 /* EDIT FIELDS */
 .ef{margin-bottom:9px;}
@@ -387,16 +390,21 @@ function updateDisplay(pid){
     const badge=document.getElementById(pid+'-badge-'+i);
     if(badge){
       if(zone!==null){
+        badge.classList.remove('empty');
         badge.style.background=ZONE_COLORS[zone];
-        const bd=badge.querySelector('.pb-desc'),bp=badge.querySelector('.pb-pct'),be=badge.querySelector('.pb-earn');
-        if(bd)bd.textContent=m.brackets[zone].r;
-        if(bp)bp.textContent=fmtP(m.brackets[zone].p);
-        if(be)be.textContent=fmt(earned)+' earned this metric';
+        badge.innerHTML=`
+          <div class="pb-left">
+            <div class="pb-label">PAYOUT BRACKET</div>
+            <div class="pb-desc">${m.brackets[zone].r}</div>
+          </div>
+          <div class="pb-right">
+            <div class="pb-pct">${fmtP(m.brackets[zone].p)}</div>
+            <div class="pb-earn">${fmt(earned)} earned</div>
+          </div>`;
       } else {
-        badge.style.background='rgba(28,46,35,.12)';
-        const bd=badge.querySelector('.pb-desc'),bp=badge.querySelector('.pb-pct'),be=badge.querySelector('.pb-earn');
-        if(bd)bd.textContent='Enter target & actual to calculate';
-        if(bp)bp.textContent='—';if(be)be.textContent='';
+        badge.classList.add('empty');
+        badge.style.background='transparent';
+        badge.innerHTML=`<div class="pb-empty-icon">🎯</div><span class="pb-empty-text">Set a target &amp; actual to see payout</span>`;
       }
     }
     el(pid+'-mb-att-'+i,att!==null?fmtP(att):'—');
@@ -552,9 +560,9 @@ function renderMetricCard(p,m,mi){
           ${zl.map(z=>`<span class="zlabel" style="left:${z.pos}">${z.l}</span>`).join('')}
         </div>
       </div>
-      <div class="pbadge" id="${p.id}-badge-${mi}" style="background:rgba(28,46,35,.12)">
-        <div class="pb-left"><div class="pb-label">PAYOUT BRACKET</div><div class="pb-desc">Enter target &amp; actual to calculate</div></div>
-        <div class="pb-right"><div class="pb-pct">—</div><div class="pb-earn"></div></div>
+      <div class="pbadge empty" id="${p.id}-badge-${mi}">
+        <div class="pb-empty-icon">🎯</div>
+        <span class="pb-empty-text">Set a target &amp; actual to see payout</span>
       </div>
     </div>
     <div class="mc-body edit-mode">
